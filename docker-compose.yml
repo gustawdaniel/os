@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  personal-os:
+    image: registry.digitalocean.com/main/os-dashboard:latest
+    container_name: os-dashboard
+    restart: always
+    ports:
+      - "3667:3000"
+    env_file:
+      - .env
+    environment:
+      - ORIGIN=https://os.gustawdaniel.com
+      - PORT=3000
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

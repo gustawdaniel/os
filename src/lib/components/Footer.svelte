@@ -6,6 +6,7 @@
 		{ name: 'LexiDrift', desc: 'Języki', url: 'https://lexidrift.com' },
 		{ name: 'MyHealth', desc: 'Badania', url: 'https://health.gustawdaniel.com' },
 		{ name: 'Blog', desc: 'Wpisy', url: 'https://gustawdaniel.com' },
+		{ name: 'GitHub', desc: 'Open Source', url: 'https://github.com/gustawdaniel/os' },
 	];
 </script>
 

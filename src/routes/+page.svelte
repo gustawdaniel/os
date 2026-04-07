@@ -32,10 +32,14 @@
 	<div class="min-h-full flex flex-col items-center p-6 text-center animate-in fade-in duration-1000">
 		<!-- Hero Section -->
 		<div class="max-w-3xl space-y-8 mt-12 mb-20">
-			<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-[0.2em] font-bold mb-4">
+			<a 
+				href="https://github.com/gustawdaniel/os" 
+				target="_blank" 
+				class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-[0.2em] font-bold mb-4 hover:bg-indigo-500/20 transition-colors"
+			>
 				<Sparkles size={12} />
-				<span>Personal OS v0.1</span>
-			</div>
+				<span>Personal OS v0.1 • Open Source</span>
+			</a>
 			
 			<h1 class="text-5xl md:text-7xl font-extralight text-white tracking-tighter leading-none mb-4">
 				Zaprojektuj swój <span class="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent font-normal italic">dzień.</span>

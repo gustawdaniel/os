@@ -3,8 +3,8 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Zainstaluj pnpm
-RUN npm install -g pnpm
+# Zainstaluj pnpm i openssl
+RUN apt-get update -y && apt-get install -y openssl && npm install -g pnpm
 
 # Skopiuj pliki zależności
 COPY package.json pnpm-lock.yaml ./

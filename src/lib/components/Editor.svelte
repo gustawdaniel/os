@@ -40,7 +40,7 @@
 	// a nie w wyniku pisania w edytorze (gdy edytor ma focus).
 	$effect(() => {
 		if (editor && !editor.isFocused && content !== editor.getHTML()) {
-			editor.commands.setContent(content, false);
+			editor.commands.setContent(content);
 		}
 	});
 

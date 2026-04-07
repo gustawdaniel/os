@@ -1,42 +1,88 @@
-# sv
+# Personal OS
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A minimalist, high-performance personal dashboard designed to manage habits, notes, and goals with a premium aesthetic. Built with Svelte 5 and a modern tech stack.
 
-## Creating a project
+![Personal OS](https://img.shields.io/badge/Status-Beta-indigo)
+![Svelte](https://img.shields.io/badge/Svelte-5-ff3e00)
+![Tailwind](https://img.shields.io/badge/Tailwind-v4-38bdf8)
+![Prisma](https://img.shields.io/badge/Prisma-6-2d3748)
 
-If you're seeing this, you've probably already done this step. Congrats!
+## ✨ Features
 
-```sh
-# create a new project
-npx sv create my-app
+- **Habit Tracker**: A ClickUp-inspired minimalist habit tracker with drag-and-drop reordering, monthly views, and progress tracking.
+- **Notes Module**: Clean, full-width WYSIWYG editor powered by Tiptap. Features autosave, compact list views, and refined typography.
+- **Google OAuth**: Secure authentication via Google for seamless login and multi-device access.
+- **Mobile First**: Fully responsive design that looks stunning on desktops and mobile devices alike.
+- **Activity Logging (WIP)**: Integrated architecture for tracking time and daily logs.
+
+## 🛠 Tech Stack
+
+- **Frontend**: [Svelte 5](https://svelte.dev/) (Rune-based reactivity)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Backend/API**: SvelteKit (Adapter Node)
+- **Database**: [MongoDB](https://www.mongodb.com/)
+- **ORM**: [Prisma v6](https://www.prisma.io/)
+- **Authentication**: [Auth.js](https://authjs.dev/) (formerly NextAuth)
+- **Deployment**: Docker & GitHub Actions (CI/CD)
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (v20+)
+- pnpm
+- MongoDB instance (local or Atlas)
+
+### Local Development
+
+1. **Clone the repository**:
+   ```bash
+   git clone git@github.com:gustawdaniel/os.git
+   cd os
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   pnpm install
+   ```
+
+3. **Set up Environment Variables**:
+   Create a `.env` file in the root directory:
+   ```env
+   DATABASE_URL="mongodb://..."
+   AUTH_SECRET="your-random-secret"
+   GOOGLE_CLIENT_ID="your-google-client-id"
+   GOOGLE_CLIENT_SECRET="your-google-client-secret"
+   ```
+
+4. **Sync Database**:
+   ```bash
+   pnpm exec prisma db push
+   pnpm exec prisma generate
+   ```
+
+5. **Run the dev server**:
+   ```bash
+   pnpm dev
+   ```
+
+## 🐳 Docker & Deployment
+
+The project is fully dockerized and includes a CI/CD pipeline for GitHub Actions.
+
+### Docker Compose
+To run the production build locally:
+```bash
+docker compose up -d
 ```
+The app will be available at `http://localhost:3667`.
 
-To recreate this project with the same configuration:
+### CI/CD Pipeline
+On every push to `main`, the GitHub Action:
+1. Builds a production Docker image.
+2. Pushes the image to **DigitalOcean Container Registry**.
+3. Deploys to your VPS via SSH and restarts the containers.
 
-```sh
-# recreate this project
-pnpm dlx sv@0.14.0 create --template minimal --types ts --add prettier eslint tailwindcss="plugins:none" --install pnpm .
-```
+## 📄 License
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Private - All rights reserved.

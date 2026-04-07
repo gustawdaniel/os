@@ -1,10 +1,10 @@
 # Stage 1: Build
-FROM node:20-slim AS builder
+FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Zainstaluj pnpm i openssl
-RUN apt-get update -y && apt-get install -y openssl && npm install -g pnpm
+# Zainstaluj pnpm i wymagane biblioteki systemowe
+RUN apt-get update -y && apt-get install -y openssl libssl-dev && npm install -g pnpm
 
 # Skopiuj pliki zależności
 COPY package.json pnpm-lock.yaml ./
@@ -19,9 +19,12 @@ COPY . .
 RUN pnpm build
 
 # Stage 2: Run
-FROM node:20-slim
+FROM node:22-bookworm-slim
 
 WORKDIR /app
+
+# Doinstaluj openssl w etapie runtime, by silnik Prismy mógł z niego korzystać
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Skopiuj pliki z etapu budowania
 COPY --from=builder /app/build ./build

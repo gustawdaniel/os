@@ -1,13 +1,12 @@
 <script lang="ts">
-	let { hours, onclick, onkeydown, children } = $props();
+	let { hours, children, ...restProps } = $props();
 </script>
 
 <div 
 	class="flex-1 relative cursor-crosshair" 
 	role="button"
 	tabindex="0"
-	{onclick}
-	{onkeydown}
+	{...restProps}
 >
 	<!-- Horizontal hour lines -->
 	{#each hours as h}

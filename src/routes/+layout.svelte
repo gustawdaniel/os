@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import { LayoutGrid, CheckSquare, PanelLeft, StickyNote, LogOut, Settings, Calendar as CalendarIcon } from 'lucide-svelte';
+	import { LayoutGrid, CheckSquare, PanelLeft, StickyNote, LogOut, Settings, Calendar as CalendarIcon, GitBranch } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { signOut } from "@auth/sveltekit/client";
 
@@ -14,6 +14,7 @@
 		{ name: 'Planowanie', href: '/calendar', icon: CalendarIcon },
 		{ name: 'Nawyki', href: '/habits', icon: CheckSquare },
 		{ name: 'Notatki', href: '/notes', icon: StickyNote },
+		{ name: 'GTD Workflow', href: '/gtd', icon: GitBranch },
 		{ name: 'Ustawienia', href: '/settings', icon: Settings },
 	];
 </script>

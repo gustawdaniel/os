@@ -2,6 +2,7 @@
 	import { format, parseISO, differenceInMinutes, startOfDay } from 'date-fns';
 	import { Calendar } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	
 	import TimelineGrid from './TimelineGrid.svelte';
 	import TimelineHourAxis from './TimelineHourAxis.svelte';
@@ -34,6 +35,17 @@
 	let dragDelta = $state(0);
 	const dragDeltaSnapped = $derived(Math.round(dragDelta / 5) * 5);
 
+	let justDragged = $state(false);
+
+	let creating = $state<{ startY: number, currentY: number, isActual: boolean, active: boolean } | null>(null);
+
+	const creationStartMins = $derived(
+		creating ? Math.round((Math.min(creating.startY, creating.currentY) * (1440 / 1440)) / 5) * 5 : 0
+	);
+	const creationDurationMins = $derived(
+		creating ? Math.max(15, Math.round((Math.abs(creating.startY - creating.currentY) * (1440 / 1440)) / 5) * 5) : 30
+	);
+
 	function getTopPercent(dateStr: string | Date) {
 		const date = new Date(dateStr);
 		const start = startOfDay(date);
@@ -54,20 +66,49 @@
 		return (duration / 1440) * 100;
 	}
 
-	function handleTimelineClick(e: MouseEvent) {
+	function handleGridPointerDown(e: PointerEvent) {
+		console.log('[DRAG-CREATE] Pointer down');
 		if (e.target !== e.currentTarget) return;
 		if (dragging) return;
 		const target = e.currentTarget as HTMLDivElement;
 		const rect = target.getBoundingClientRect();
-		const x = e.clientX - rect.left;
-		const isActual = x > rect.width / 2;
 		const y = e.clientY - rect.top;
-		const minutesPerPixel = 1440 / rect.height;
-		let totalMinutes = Math.round((y * minutesPerPixel) / 5) * 5;
-		const date = startOfDay(new Date());
-		date.setMinutes(totalMinutes);
-		if (isActual) onQuickAddEntry(date);
-		else onQuickAdd(date);
+		const x = e.clientX - rect.left;
+		creating = { startY: y, currentY: y, isActual: x > rect.width / 2, active: true };
+		target.setPointerCapture(e.pointerId);
+	}
+
+	function handleGridPointerMove(e: PointerEvent) {
+		if (!creating || !creating.active) return;
+		const target = e.currentTarget as HTMLDivElement;
+		const rect = target.getBoundingClientRect();
+		creating.currentY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+	}
+
+	function handleGridPointerUp(e: PointerEvent) {
+		if (!creating || !creating.active) return;
+		console.log(`[DRAG-CREATE] Pointer up. Duration: ${creationDurationMins}m, Start: ${creationStartMins}m`);
+		
+		const startDate = startOfDay(new Date());
+		startDate.setMinutes(creationStartMins);
+		
+		const isActual = creating.isActual;
+		const duration = creationDurationMins;
+		
+		creating = null;
+
+		if (isActual) onQuickAddEntry(startDate, duration);
+		else onQuickAdd(startDate, duration);
+	}
+
+	function handleItemClick(e: MouseEvent, item: any, type: 'task' | 'entry' | 'gcal') {
+		e.stopPropagation();
+		console.log(`[ITEM-CLICK] Called on item ${item.id}. justDragged=${justDragged}`);
+		if (justDragged) {
+			console.log(`[ITEM-CLICK] Blocked edit modal because justDragged is true`);
+			return;
+		}
+		onEdit(item, type);
 	}
 
 	function handleDragStart(e: PointerEvent, item: any, type: 'task' | 'entry' | 'gcal', mode: 'move' | 'resize-top' | 'resize-bottom' = 'move') {
@@ -86,16 +127,35 @@
 	async function handleDragEnd(e: PointerEvent) {
 		if (!dragging) return;
 		
+		console.log(`[DRAG-RESIZE] End triggered. DeltaMins: ${dragDeltaSnapped}`);
 		const deltaMins = dragDeltaSnapped;
+		const wasDragging = dragging !== null && Math.abs(dragDelta) > 0;
+		const currentDragging = { ...dragging }; // Capture to process fetch safely
+		
+		// Synchronous reset before any async yield so the subsequent click event sees that we just dragged
+		dragging = null;
+		dragDelta = 0;
+		if (wasDragging) {
+			justDragged = true;
+			console.log(`[DRAG-RESIZE] Setting justDragged to true`);
+			setTimeout(() => {
+				justDragged = false;
+				console.log(`[DRAG-RESIZE] justDragged timeout ended`);
+			}, 200);
+		}
+
 		if (Math.abs(deltaMins) >= 1) {
-			const { item, mode, type, id } = dragging;
+			console.log(`[DRAG-RESIZE] Committing save for id: ${currentDragging.id}`);
+			const { item, mode, type, id } = currentDragging;
 			const initialStart = new Date(item.startAt || item.scheduledAt || item.start?.dateTime || item.start?.date);
 			let newStart = new Date(initialStart.getTime());
 			
-			// Fix: Initial duration should be based on real item data, not default 30 for entries
 			let newDuration = item.duration;
 			if (type === 'entry') {
 				const endAt = item.endAt ? new Date(item.endAt) : new Date();
+				newDuration = differenceInMinutes(endAt, initialStart);
+			} else if (type === 'gcal') {
+				const endAt = new Date(item.end?.dateTime || item.end?.date || initialStart);
 				newDuration = differenceInMinutes(endAt, initialStart);
 			} else if (!newDuration) {
 				newDuration = 30; // Fallback for tasks without duration
@@ -119,11 +179,11 @@
 				const finalEnd = new Date(newStart.getTime() + newDuration * 60000);
 				formData.append('startAt', newStart.toISOString());
 				if (item.endAt || mode.startsWith('resize')) formData.append('endAt', finalEnd.toISOString());
-				await fetch('?/updateTimeEntry', { method: 'POST', body: formData });
+				await fetch('?/updateTimeEntry', { method: 'POST', body: formData, headers: { 'x-sveltekit-action': 'true' } });
 			} else if (type === 'task') {
 				formData.append('scheduledAt', newStart.toISOString());
 				formData.append('duration', String(newDuration));
-				await fetch('?/updateGtdTask', { method: 'POST', body: formData });
+				await fetch('?/updateGtdTask', { method: 'POST', body: formData, headers: { 'x-sveltekit-action': 'true' } });
 			} else if (type === 'gcal') {
 				const finalEnd = new Date(newStart.getTime() + newDuration * 60000);
 				const gcalFormData = new FormData();
@@ -131,11 +191,18 @@
 				gcalFormData.append('calendarId', item.calendarId || 'primary');
 				gcalFormData.append('startAt', newStart.toISOString());
 				gcalFormData.append('endAt', finalEnd.toISOString());
-				await fetch('?/updateGCalEvent', { method: 'POST', body: gcalFormData });
+				
+				console.log(`[DRAG-RESIZE] Fetching updateGCalEvent...`);
+				const res = await fetch('?/updateGCalEvent', { 
+					method: 'POST', 
+					body: gcalFormData,
+					headers: { 'x-sveltekit-action': 'true' }
+				});
+				const text = await res.text();
+				console.log(`[DRAG-RESIZE] Server response for GCal:`, text);
 			}
+			await invalidateAll();
 		}
-		dragging = null;
-		dragDelta = 0;
 	}
 </script>
 
@@ -164,8 +231,24 @@
 		>
 			<TimelineHourAxis {hours} />
 			
-			<TimelineGrid {hours} onclick={handleTimelineClick} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && onQuickAdd(new Date())}>
+			<TimelineGrid 
+				{hours} 
+				onpointerdown={handleGridPointerDown}
+				onpointermove={handleGridPointerMove}
+				onpointerup={handleGridPointerUp}
+				onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && onQuickAdd(new Date(), 30)}
+			>
 				<TimelineCurrentTime {nowPx} />
+				
+				<!-- Ghost Drag-to-Create Box -->
+				{#if creating}
+					<div 
+						class="absolute rounded-xl px-2 py-1 bg-stone-500/20 border-2 border-dashed border-stone-500/50 pointer-events-none z-40 transition-all flex items-start justify-center"
+						style="left: {creating.isActual ? '52%' : '2%'}; width: 44%; top: {(creationStartMins / 1440) * 100}%; height: {(creationDurationMins / 1440) * 100}%;"
+					>
+						<span class="text-[10px] font-bold text-stone-300 mt-1">{creationDurationMins}m</span>
+					</div>
+				{/if}
 
 				<!-- Plan Layer -->
 				<div class="absolute inset-0 z-10 pointer-events-none">
@@ -175,13 +258,13 @@
 						{@const duration = event.duration || 30}
 						{#if start}
 							<TimelineItem 
-								item={event} type={event.status ? 'task' : 'gcal'}
+								item={event} type={event.calendarName ? 'gcal' : 'task'}
 								isDragging={dragging?.id === event.id} dragDelta={dragDeltaSnapped} dragMode={dragging?.mode}
 								left="2%" width="44%" 
 								top={getTopPercent(start) * 14.4} 
 								height={getHeightPercent(start, end, duration) * 14.4}
 								onDragStart={handleDragStart}
-								onclick={(e) => { e.stopPropagation(); onEdit(event, event.status ? 'task' : 'gcal'); }}
+								onclick={(e) => handleItemClick(e, event, event.calendarName ? 'gcal' : 'task')}
 							/>
 						{/if}
 					{/each}
@@ -197,7 +280,7 @@
 							top={getTopPercent(entry.startAt) * 14.4} 
 							height={getHeightPercent(entry.startAt, entry.endAt) * 14.4}
 							onDragStart={handleDragStart}
-							onclick={(e) => { e.stopPropagation(); onEdit(entry, 'entry'); }}
+							onclick={(e) => handleItemClick(e, entry, 'entry')}
 						/>
 					{/each}
 				</div>

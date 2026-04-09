@@ -40,13 +40,25 @@
 		`${baseColor}80`
 	);
 	const textColor = $derived(isEntry ? 'text-emerald-300' : 'text-indigo-100');
+	const displayTime = $derived.by(() => {
+		let d: Date;
+		if (isEntry) d = new Date(item.startAt);
+		else if (item.start?.dateTime) d = parseISO(item.start.dateTime);
+		else if (item.scheduledAt) d = new Date(item.scheduledAt);
+		else return 'All Day';
+
+		if (isDragging && (dragMode === 'move' || dragMode === 'resize-top')) {
+			d = new Date(d.getTime() + dragDelta * 60000);
+		}
+		return format(d, 'HH:mm');
+	});
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="absolute rounded-xl px-2.5 py-1.5 transition-all group pointer-events-auto shadow-md border
-		{isDragging ? 'z-50 opacity-80 scale-[1.02] shadow-2xl' : ''}"
+	class="absolute rounded-xl px-2.5 py-1.5 transition-all group shadow-md border
+		{isDragging ? 'z-50 opacity-80 scale-[1.02] shadow-2xl pointer-events-none' : 'pointer-events-auto hover:z-20'}"
 	style="left: {left}; width: {width}; 
 		top: {top + (isDragging && dragMode === 'resize-top' ? dragDelta : (isDragging && dragMode === 'move' ? dragDelta : 0))}px; 
 		height: {Math.max(height + (isDragging && dragMode === 'resize-bottom' ? dragDelta : (isDragging && dragMode === 'resize-top' ? -dragDelta : 0)), 24)}px;
@@ -63,11 +75,11 @@
 
 	<!-- Resize handles -->
 	<div 
-		class="absolute top-0 inset-x-0 h-2 cursor-ns-resize hover:bg-white/20 z-10"
+		class="absolute top-0 inset-x-0 h-2 cursor-ns-resize hover:bg-white/20 z-10 pointer-events-auto"
 		onpointerdown={(e) => onDragStart(e, item, type, 'resize-top')}
 	></div>
 	<div 
-		class="absolute bottom-0 inset-x-0 h-2 cursor-ns-resize hover:bg-white/20 z-10"
+		class="absolute bottom-0 inset-x-0 h-2 cursor-ns-resize hover:bg-white/20 z-10 pointer-events-auto"
 		onpointerdown={(e) => onDragStart(e, item, type, 'resize-bottom')}
 	></div>
 
@@ -75,11 +87,6 @@
 		{item.summary || item.title || item.description || '(no description)'}
 	</p>
 	<p class="relative z-0 text-[9px] {isEntry ? 'text-emerald-500/70' : 'text-indigo-500/70'} pointer-events-none">
-		{#if isEntry}
-			{format(new Date(item.startAt), 'HH:mm')}
-		{:else}
-			{item.start?.dateTime ? format(parseISO(item.start.dateTime), 'HH:mm') : 
-			 item.scheduledAt ? format(new Date(item.scheduledAt), 'HH:mm') : 'All Day'}
-		{/if}
+		{displayTime}
 	</p>
 </div>

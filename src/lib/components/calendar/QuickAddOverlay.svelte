@@ -3,10 +3,10 @@
 	import { X, Zap, Clock } from 'lucide-svelte';
 	import { fade, scale } from 'svelte/transition';
 
-	let { date, onCancel, onSuccess } = $props();
+	let { date, defaultDuration = 30, onCancel, onSuccess } = $props();
 
 	let title = $state('');
-	let estimate = $state(30);
+	let estimate = $state(defaultDuration);
 	let isSubmitting = $state(false);
 
 	function handleKeydown(e: KeyboardEvent) {

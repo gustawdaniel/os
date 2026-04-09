@@ -4,6 +4,9 @@ import { startOfDay, endOfDay } from 'date-fns';
 import { getGoogleAccessToken } from '$lib/server/google';
 import { syncTodoistTasks } from '$lib/server/sync';
 
+// Enforce explicit European/Warsaw Timezone on the Server backend to fix shifts
+process.env.TZ = 'Europe/Warsaw';
+
 function isValidObjectId(id: string) {
 	return /^[0-9a-fA-F]{24}$/.test(id);
 }
@@ -69,7 +72,7 @@ export const load: PageServerLoad = async (event) => {
 						{ headers: { Authorization: `Bearer ${googleToken}` } }
 					);
 					const data = await res.json();
-					return (data.items || []).map((ev: any) => ({ ...ev, calendarName: cal.summary }));
+					return (data.items || []).map((ev: any) => ({ ...ev, calendarName: cal.summary, calendarId: cal.id }));
 				} catch (e) {
 					console.error(`[GCal] Error fetching calendar ${cal.summary}:`, e);
 					return [];
@@ -419,30 +422,34 @@ export const actions: Actions = {
 		const googleToken = await getGoogleAccessToken(session.user.id, event.fetch);
 		if (!googleToken) return { success: false };
 
-		// Background the sync to avoid blocking the UI
+		// Wait for sync to avoid reverting state when UI invalidates
 		const patchData = {
 			start: { dateTime: new Date(startAt).toISOString() },
 			end: { dateTime: new Date(endAt).toISOString() }
 		};
 
-		// FIRE AND FORGET (with logging)
-		event.fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${id}`, {
-			method: 'PATCH',
-			headers: { 
-				Authorization: `Bearer ${googleToken}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(patchData)
-		}).then(async (res) => {
+		try {
+			const res = await event.fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${id}`, {
+				method: 'PATCH',
+				headers: { 
+					Authorization: `Bearer ${googleToken}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(patchData)
+			});
 			if (!res.ok) {
 				const err = await res.json();
-				console.error('[GCal-Background] Sync failed:', JSON.stringify(err));
+				console.error('[GCal-Sync] Sync failed:', JSON.stringify(err));
+				const fs = await import('fs');
+				fs.writeFileSync('/tmp/gcal_err.log', JSON.stringify({ req: patchData, calendarId, id, err }, null, 2));
 			} else {
-				console.log('[GCal-Background] Sync successful for event:', id);
+				console.log('[GCal-Sync] Sync successful for event:', id);
 			}
-		}).catch(err => {
-			console.error('[GCal-Background] Network error:', err);
-		});
+		} catch (err: any) {
+			console.error('[GCal-Sync] Network error:', err);
+			const fs = await import('fs');
+			fs.writeFileSync('/tmp/gcal_err.log', JSON.stringify({ networkErr: err?.message || err }, null, 2));
+		}
 
 		return { success: true };
 	},

@@ -41,8 +41,8 @@
 		return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':');
 	}
 
-	let quickAddDate = $state<Date | null>(null);
-	let quickAddEntryDate = $state<Date | null>(null);
+	let quickAdd = $state<{ date: Date, duration: number } | null>(null);
+	let quickAddEntry = $state<{ date: Date, duration: number } | null>(null);
 
 	const inboxTasks = $derived(data.gtdTasks.filter(t => t.status === 'INBOX'));
 	const nextTasks = $derived(data.gtdTasks.filter(t => t.status === 'NEXT'));
@@ -162,28 +162,30 @@
 		calendarEvents={data.calendarEvents} 
 		gtdTasks={data.gtdTasks} 
 		timeEntries={data.timeEntries} 
-		onQuickAdd={(date) => {
-			quickAddDate = date;
+		onQuickAdd={(date, duration = 30) => {
+			quickAdd = { date, duration };
 		}}
-		onQuickAddEntry={(date) => {
-			quickAddEntryDate = date;
+		onQuickAddEntry={(date, duration = 30) => {
+			quickAddEntry = { date, duration };
 		}}
 		onEdit={openEdit}
 	/>
 </div>
 
-{#if quickAddDate}
+{#if quickAdd}
 	<QuickAddOverlay 
-		date={quickAddDate} 
-		onCancel={() => quickAddDate = null}
-		onSuccess={() => quickAddDate = null}
+		date={quickAdd.date} 
+		defaultDuration={quickAdd.duration}
+		onCancel={() => quickAdd = null}
+		onSuccess={() => quickAdd = null}
 	/>
 {/if}
-{#if quickAddEntryDate}
+{#if quickAddEntry}
 	<QuickAddEntryOverlay 
-		date={quickAddEntryDate} 
-		onCancel={() => quickAddEntryDate = null}
-		onSuccess={() => quickAddEntryDate = null}
+		date={quickAddEntry.date} 
+		defaultDuration={quickAddEntry.duration}
+		onCancel={() => quickAddEntry = null}
+		onSuccess={() => quickAddEntry = null}
 	/>
 {/if}
 {#if editingItem}

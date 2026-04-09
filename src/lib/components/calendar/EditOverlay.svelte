@@ -88,8 +88,12 @@
 			id="edit-form"
 			method="POST" 
 			{action}
-			use:enhance={() => {
+			use:enhance={({ formData }) => {
 				isSubmitting = true;
+				if (startAt) formData.set('startAt', new Date(startAt).toISOString());
+				if (endAt) formData.set('endAt', new Date(endAt).toISOString());
+				if (scheduledAt) formData.set('scheduledAt', new Date(scheduledAt).toISOString());
+				
 				return async ({ update }) => {
 					await update();
 					isSubmitting = false;
@@ -200,6 +204,9 @@
 				}}
 			>
 				<input type="hidden" name="id" value={item.id} />
+				{#if type === 'gcal'}
+					<input type="hidden" name="calendarId" value={item.calendarId || 'primary'} />
+				{/if}
 				<button 
 					type="submit"
 					disabled={isDeleting}

@@ -3,10 +3,10 @@
 	import { X, History, Clock } from 'lucide-svelte';
 	import { fade, scale } from 'svelte/transition';
 
-	let { date, onCancel, onSuccess } = $props();
+	let { date, defaultDuration = 30, onCancel, onSuccess } = $props();
 
 	let description = $state('');
-	let duration = $state(30);
+	let duration = $state(defaultDuration);
 	let isSubmitting = $state(false);
 
 	function focus(node: HTMLInputElement) {

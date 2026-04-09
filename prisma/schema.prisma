@@ -21,9 +21,28 @@ model User {
   activities    ActivityLog[]
   habits        Habit[]
   notes         Note[]
+  integrations  UserIntegration[]
+  timeEntries   TimeEntry[]
+  gtdTasks      GtdTask[]
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model UserIntegration {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  provider    String   // "todoist", "toggl"
+  apiKey      String   // Klucz API dostawcy
+  externalId  String?  // Np. workspaceId dla Toggl
+  settings    Json?    // Opcjonalne ustawienia (np. id projektów do sync)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, provider])
 }
 
 model Account {
@@ -123,3 +142,53 @@ model HabitLog {
   // Baza nie pozwoli zalogować nawyku 2 razy w jednym dniu
   @@unique([habitId, date])
 }
+
+// --- MODUŁ: WBUDOWANY TIME TRACKER (zamiast Toggl) ---
+
+model TimeEntry {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  description String    @default("")
+  project     String?   // Opcjonalna kategoria/projekt
+  color       String?   // Kolor do wizualizacji na osi czasu
+
+  taskId      String?   @db.ObjectId
+  task        GtdTask?  @relation(fields: [taskId], references: [id])
+
+  startAt     DateTime
+  endAt       DateTime? // null = timer wciąż aktywny
+
+  createdAt   DateTime  @default(now())
+}
+
+model GtdTask {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String    @db.ObjectId
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title         String
+  description   String?
+  status        String    @default("INBOX") // INBOX, NEXT, SOMEDAY, WAITING, DONE, TRASH, REFERENCE
+  estimate      Int?      // Estymacja w minutach
+  
+  // Planowanie
+  scheduledAt   DateTime? // Kiedy zadanie ma się pojawić w kalendarzu
+  duration      Int       @default(30) // Czas trwania w minutach
+  
+  // Integracje
+  todoistId     String?   
+  gcalEventId   String?   
+  gcalCalendarId String?  @default("primary")
+  color         String?   // Zachowanie koloru z GCal
+  
+  timeEntries   TimeEntry[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, scheduledAt])
+}
+

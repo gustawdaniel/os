@@ -44,19 +44,19 @@ model ActivityLog {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   userId     String   @db.ObjectId
   user       User     @relation(fields: [userId], references: [id])
-  
+
   title      String
   source     String   // np. "google_calendar", "toggl", "router", "manual"
   type       String   // "PLAN" vs "REAL"
-  
+
   start      DateTime
   end        DateTime?
-  
+
   // Różne ustrukturyzowane metadane z apek (JSON)
-  payload    Json?    
-  
+  payload    Json?
+
   createdAt  DateTime @default(now())
-  
+
   @@index([userId, start])
 }
 ```
@@ -64,7 +64,9 @@ model ActivityLog {
 ## 🗺️ Roadmapa (Plan Działania)
 
 ### Etap 1: Setup i Integracja Google + Toggl (MVP)
-*Cel: Odtworzenie podstawowych wizualizacji znanych z Dote Timer w oparciu o prawdziwe dane.*
+
+_Cel: Odtworzenie podstawowych wizualizacji znanych z Dote Timer w oparciu o prawdziwe dane._
+
 - [ ] Inicjalizacja projektu SvelteKit z TailwindCSS.
 - [ ] Setup i podłączenie kontenera MongoDB + Prisma (bez Mongoose).
 - [ ] Zbudowanie paczki skryptu (ingestora) łączącego się do API Google Calendar (import zadań typu `PLAN`).
@@ -72,17 +74,48 @@ model ActivityLog {
 - [ ] Budowa widoku Dashboard: Pionowa oś 24h pokazująca plan zestawiony ze stanem faktycznym (nakładające się bloki na osi z-index).
 
 ### Etap 2: Dodawanie Kolektorów (Źródeł danych)
-*Cel: Rozszerzenie śledzenia o dodatkowe aplikacje, żeby pokazywać pełen przepływ dnia.*
+
+_Cel: Rozszerzenie śledzenia o dodatkowe aplikacje, żeby pokazywać pełen przepływ dnia._
+
 - [ ] Osobiste narzędzia zdrowotne (śledzenie wagi, stan zdrowia, sen - Google Fit / Sleep Droid).
 - [ ] Osobiste finanse (wydatki / LoseIt).
 - [ ] Skrypt nasłuchiwania komunikacji przychodzącej/wychodzącej.
 
 ### Etap 3: Zaawansowana Korelacja Danych i Moduł GTD (Wielkie Scalanie)
-*Cel: Widoki pozwalające na analizy "Plan vs Real" poparte konkretnymi statystykami.*
+
+_Cel: Widoki pozwalające na analizy "Plan vs Real" poparte konkretnymi statystykami._
+
 - [ ] Wprowadzenie widoków z macierzą Eisenhowera.
 - [ ] Inteligentne powiązanie: Automatyczna modyfikacja zadań zaplanowanych ze względu na odczyt ze skryptów "Real" (np. ruch git/GitHub, spędzony czas na URL).
 - [ ] Przyszłość: Wpięcie silnika wektorowego (MongoDB) do przeszukiwań pełnotekstowych zapytań (LLM).
 
 ## Spis Twoich Aplikacji/Skryptów
+
 **Posiadane/Własne:** Śledzenie zdrowia, wydatki, nasłuch komunikacji, nasłuch procesów PC (zrzuty ekranów).
 **Zewnętrzne (Do integracji/przepisania):** Content SoMe, Dietetyka (Lose It), Trening (Strong), Sen (Sleep Droid), Zdrowie ogółem (Google Fit), Google Calendar.
+
+---
+
+co do integracji z todoist
+
+mam erro 410 o tym, ze jest deprecated
+
+ale mam takie problemy:
+
+1. w kalendarzu nie wiedzę rzeczy na dzisiaj z google calendar
+2. nie widzę tasków z todoist nigdzie
+3. jak kliknę start na nowy trackowany czas to mam 00:00:00 i to się zaczyna aktualizować realtime dopiero jak odświerzę stronę, nazwa jest nie edytowalna po wystartowaniu i jak klikam "zatrzymaj" to system nie realguje
+
+co do todist tu masz o migracji
+
+https://developer.todoist.com/api/v1/#tag/Migrating-from-v9
+
+Migrating from v9
+
+The Todoist API v1 is a new API that unifies the Sync API v9 and the REST API v2. This section shows what was changed in the new version in one single place to ease the migration for current apps and integrations.
+
+The documentation for the Sync API v9 and REST API v2 are still available for reference.
+
+wiec jak bym zaczal czytanie dokumentacji tu
+
+https://developer.todoist.com/api/v1/#section/Developing-with-Todoist

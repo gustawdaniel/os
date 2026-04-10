@@ -14,16 +14,16 @@
 		{ name: 'Planowanie', href: '/calendar', icon: CalendarIcon },
 		{ name: 'Nawyki', href: '/habits', icon: CheckSquare },
 		{ name: 'Notatki', href: '/notes', icon: StickyNote },
-		{ name: 'GTD Workflow', href: '/gtd', icon: GitBranch },
+		{ name: 'GTD', href: '/gtd', icon: GitBranch },
 		{ name: 'Ustawienia', href: '/settings', icon: Settings },
 	];
 </script>
 
 <div class="flex h-screen bg-stone-950 text-stone-100 overflow-hidden font-light">
 	
-	<!-- Sidebar: Tylko dla zalogowanych -->
+	<!-- Sidebar: Desktop only -->
 	{#if session}
-		<aside class="flex flex-col border-r border-stone-800/50 bg-stone-950 transition-all duration-300 ease-in-out z-30 {sidebarOpen ? 'w-64' : 'w-16'}">
+		<aside class="hidden md:flex flex-col border-r border-stone-800/50 bg-stone-950 transition-all duration-300 ease-in-out z-30 {sidebarOpen ? 'w-64' : 'w-16'}">
 			<!-- Header: Logo + Toggle -->
 			<div class="flex items-center h-14 border-b border-stone-800/50 {sidebarOpen ? 'px-4 justify-between' : 'justify-center'}">
 				{#if sidebarOpen}
@@ -96,11 +96,27 @@
 	{/if}
 
 	<!-- Main -->
-	<main class="flex-1 relative overflow-y-auto">
+	<main class="flex-1 relative overflow-y-auto {session ? 'pb-16 md:pb-0' : ''}">
 		<div class="absolute top-0 right-0 w-[600px] h-[400px] bg-indigo-600/5 rounded-full blur-3xl pointer-events-none -translate-y-1/3 translate-x-1/3"></div>
 		<div class="h-full relative z-10">
 			{@render children()}
 		</div>
 	</main>
-</div>
 
+	<!-- Mobile Bottom Nav: tylko dla zalogowanych -->
+	{#if session}
+		<nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-stretch border-t border-stone-800/60 bg-stone-950/95 backdrop-blur-md" style="padding-bottom: env(safe-area-inset-bottom);">
+			{#each navigation as item}
+				{@const isActive = page.url.pathname === item.href || (item.href !== '/' && page.url.pathname.startsWith(item.href))}
+				<a
+					href={item.href}
+					class="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-all
+						{isActive ? 'text-indigo-400' : 'text-stone-600 active:text-stone-300'}"
+				>
+					<item.icon size={20} class="shrink-0" />
+					<span class="text-[9px] font-bold uppercase tracking-wider">{item.name}</span>
+				</a>
+			{/each}
+		</nav>
+	{/if}
+</div>

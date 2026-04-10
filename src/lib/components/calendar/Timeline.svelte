@@ -20,7 +20,17 @@
 	} = $props();
 
 	const hours = Array.from({ length: 25 }, (_, i) => i);
-	const nowPx = $derived(differenceInMinutes(new Date(), startOfDay(new Date())));
+	function getNowPx() {
+		return differenceInMinutes(new Date(), startOfDay(new Date()));
+	}
+	let nowPx = $state(getNowPx());
+
+	$effect(() => {
+		const interval = setInterval(() => {
+			nowPx = getNowPx();
+		}, 30_000); // co 30 sekund
+		return () => clearInterval(interval);
+	});
 
 	// Drag & Drop State
 	let dragging = $state<{
